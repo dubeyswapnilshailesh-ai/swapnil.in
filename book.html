@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THE NOBLE SHELF | Premium Private Library</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,900;1,400&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap');
+        
+        :root {
+            --primary: #c5a059; /* Gold */
+            --bg: #fcfaf7; /* Paper Cream */
+            --text: #1a1a1a; /* Charcoal */
+        }
+
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            overflow-x: hidden; 
+        }
+
+        h1, h2, h3, .serif { font-family: 'Playfair Display', serif; }
+
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(15px); border: 1px solid rgba(0, 0, 0, 0.05); }
+        
+        /* Premium Drawer */
+        #cart-drawer { transform: translateX(100%); transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+        #cart-drawer.open { transform: translateX(0); }
+
+        /* Book Card Hover */
+        .book-card { transition: 0.4s ease; border-bottom: 2px solid transparent; }
+        .book-card:hover { transform: translateY(-12px); border-bottom: 2px solid var(--primary); }
+
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(26, 26, 26, 0.9); z-index: 2000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay.active { display: flex; }
+
+        /* Delivery Progress */
+        .delivery-track { height: 2px; background: #ddd; position: relative; width: 100%; margin: 40px 0; }
+        .delivery-progress { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s; }
+        .delivery-icon { position: absolute; top: -15px; left: 0%; transition: left 0.3s; }
+    </style>
+</head>
+<body>
+
+    <div id="loader" class="fixed inset-0 bg-[#1a1a1a] z-[5000] flex flex-col items-center justify-center text-white">
+        <div class="text-3xl serif italic mb-4">The Noble Shelf</div>
+        <div class="w-48 h-[1px] bg-white/20 relative overflow-hidden">
+            <div class="absolute inset-0 bg-[#c5a059] animate-progress origin-left"></div>
+        </div>
+    </div>
+
+    <nav class="fixed top-0 w-full z-[1000] px-10 py-6 flex justify-between items-center glass">
+        <div class="text-2xl font-black serif tracking-tight">NOBLE<span class="text-[#c5a059]">SHELF</span></div>
+        <div class="flex gap-8 items-center">
+            <button onclick="toggleCart()" class="relative group">
+                <span class="font-bold tracking-widest text-xs uppercase">Collection</span>
+                <span id="cart-badge" class="absolute -top-3 -right-4 bg-[#c5a059] text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center">0</span>
+            </button>
+        </div>
+    </nav>
+
+    <div id="cart-drawer" class="fixed top-0 right-0 h-full w-full md:w-[450px] bg-white z-[1500] p-10 flex flex-col shadow-2xl">
+        <div class="flex justify-between items-center mb-10">
+            <h2 class="text-3xl serif italic">Your Selection</h2>
+            <button onclick="toggleCart()" class="text-2xl hover:rotate-90 transition">✕</button>
+        </div>
+        <div id="cart-items" class="flex-grow overflow-y-auto space-y-6">
+            <p class="text-gray-400 italic">No stories selected yet...</p>
+        </div>
+        <div class="border-t pt-8">
+            <div class="flex justify-between text-xl mb-6">
+                <span class="serif">Subtotal</span>
+                <span id="total-price" class="font-bold">₹0</span>
+            </div>
+            <button onclick="openCheckout()" class="w-full bg-[#1a1a1a] text-white py-5 rounded-sm font-bold tracking-widest hover:bg-[#c5a059] transition">RESERVE COPIES</button>
+        </div>
+    </div>
+
+    <header class="h-screen flex flex-col items-center justify-center text-center bg-[#fcfaf7]">
+        <span class="text-[#c5a059] tracking-[0.4em] uppercase text-xs mb-6 font-bold">Est. 1924 • Private Collection</span>
+        <h1 id="hero-text" class="text-6xl md:text-9xl serif italic leading-tight opacity-0">Read<br>Sublimely.</h1>
+        <p id="hero-sub" class="mt-8 text-gray-500 max-w-md mx-auto leading-relaxed opacity-0">Curating rare editions and timeless literature for the discerning mind.</p>
+    </header>
+
+    <main class="px-8 md:px-20 py-32 bg-white">
+        <div class="flex flex-col md:flex-row justify-between items-end mb-20 border-b pb-10">
+            <h2 class="text-5xl serif">The Autumn Catalog</h2>
+            <p class="text-gray-400 text-sm tracking-widest uppercase">Select by rarity</p>
+        </div>
+        
+        <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-16">
+            </div>
+    </main>
+
+    <div id="checkout-modal" class="modal-overlay">
+        <div class="bg-white max-w-2xl w-full p-12 rounded-sm relative">
+            <h2 class="text-4xl serif mb-8">Delivery Details</h2>
+            <div class="grid grid-cols-1 gap-6">
+                <input type="text" placeholder="Full Name" class="border-b border-gray-200 py-4 outline-none focus:border-[#c5a059] transition">
+                <input type="text" placeholder="Shipping Address" class="border-b border-gray-200 py-4 outline-none focus:border-[#c5a059] transition">
+                <div class="flex gap-6">
+                    <input type="text" placeholder="Contact" class="flex-grow border-b border-gray-200 py-4 outline-none">
+                    <div class="py-4 border-b text-gray-400">Premium Courier</div>
+                </div>
+                <button onclick="startTracking()" class="mt-10 bg-[#1a1a1a] text-white py-6 font-bold tracking-widest">CONFIRM SHIPMENT (₹<span id="pay-total">0</span>)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="tracking-modal" class="modal-overlay">
+        <div class="bg-[#1a1a1a] text-white max-w-3xl w-full p-16 text-center">
+            <h2 class="text-4xl serif italic mb-4">En Route</h2>
+            <p id="status-text" class="text-[#c5a059] tracking-widest uppercase text-xs mb-12">Courier is preparing your parcel...</p>
+            
+            <div class="delivery-track">
+                <div id="progress-bar" class="delivery-progress"></div>
+                <div id="bike-icon" class="delivery-icon text-2xl">📦</div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-8 mt-20 text-left border-t border-white/10 pt-10">
+                <div>
+                    <p class="text-[10px] text-gray-500 uppercase mb-2">Manifest</p>
+                    <p class="text-sm font-bold italic" id="order-id">#NS-8829</p>
+                </div>
+                <div>
+                    <p class="text-[10px] text-gray-500 uppercase mb-2">Estimated</p>
+                    <p class="text-sm font-bold">2-3 Business Days</p>
+                </div>
+                <div>
+                    <p class="text-[10px] text-gray-500 uppercase mb-2">Service</p>
+                    <p class="text-sm font-bold">First Class</p>
+                </div>
+            </div>
+            <button onclick="location.reload()" class="mt-16 border border-white/20 px-10 py-3 hover:bg-white hover:text-black transition uppercase text-xs tracking-widest">Close</button>
+        </div>
+    </div>
+
+    <script>
+        const bookCovers = [
+            "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=500&q=80",
+            "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=500&q=80",
+            "https://images.unsplash.com/photo-1543005128-d39eef67a070?w=500&q=80",
+            "https://images.unsplash.com/photo-1589998059171-988d887df646?w=500&q=80",
+            "https://images.unsplash.com/photo-1532012197267-da84d127e765?w=500&q=80"
+        ];
+
+        const bookTitles = ["The Silent Alchemy", "Whispers of the Old Oak", "Velvet Horizons", "Echoes of Eternity", "The Golden Ratio", "Midnight Philosophy"];
+        let cart = [];
+
+        window.addEventListener('load', () => {
+            gsap.to("#loader", { y: "-100%", duration: 1, ease: "power4.inOut" });
+            gsap.to("#hero-text", { opacity: 1, y: -30, duration: 1.5, delay: 0.5 });
+            gsap.to("#hero-sub", { opacity: 1, duration: 1, delay: 1 });
+            renderBooks();
+        });
+
+        function renderBooks() {
+            const grid = document.getElementById('grid');
+            for(let i=1; i<=24; i++) {
+                const img = bookCovers[i % bookCovers.length];
+                const title = bookTitles[i % bookTitles.length] + ` (Ed. ${i})`;
+                const price = Math.floor(Math.random() * 2000) + 899;
+                
+                grid.innerHTML += `
+                    <div class="book-card group opacity-0 translate-y-10 scroll-item">
+                        <div class="relative overflow-hidden aspect-[3/4] mb-6 bg-gray-100">
+                            <img src="${img}" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700">
+                        </div>
+                        <h3 class="text-2xl mb-2">${title}</h3>
+                        <p class="text-gray-400 text-xs uppercase tracking-widest mb-6">Hardcover • Limited Edition</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xl font-bold italic text-[#c5a059]">₹${price.toLocaleString('en-IN')}</span>
+                            <button onclick="addToCart('${title}', ${price}, '${img}')" class="text-xs font-bold tracking-[0.2em] border-b border-black pb-1 hover:text-[#c5a059] hover:border-[#c5a059] transition">ADD TO COLLECTION</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            gsap.utils.toArray('.scroll-item').forEach(box => {
+                gsap.to(box, {
+                    scrollTrigger: { trigger: box, start: "top 90%" },
+                    opacity: 1, y: 0, duration: 1
+                });
+            });
+        }
+
+        function toggleCart() { document.getElementById('cart-drawer').classList.toggle('open'); }
+
+        function addToCart(name, price, img) {
+            cart.push({ name, price, img });
+            updateCart();
+            if(!document.getElementById('cart-drawer').classList.contains('open')) toggleCart();
+        }
+
+        function updateCart() {
+            const itemsDiv = document.getElementById('cart-items');
+            const totalEl = document.getElementById('total-price');
+            const badge = document.getElementById('cart-badge');
+            
+            badge.innerText = cart.length;
+            if(cart.length === 0) {
+                itemsDiv.innerHTML = `<p class="text-gray-400 italic">No stories selected yet...</p>`;
+            } else {
+                itemsDiv.innerHTML = cart.map((item, idx) => `
+                    <div class="flex items-center gap-6 animate__animated animate__fadeIn">
+                        <img src="${item.img}" class="w-16 h-20 object-cover">
+                        <div class="flex-grow">
+                            <h4 class="font-bold text-sm mb-1">${item.name}</h4>
+                            <p class="text-[#c5a059] text-sm">₹${item.price}</p>
+                        </div>
+                        <button onclick="cart.splice(${idx}, 1); updateCart();" class="text-gray-300 hover:text-black">✕</button>
+                    </div>
+                `).join('');
+            }
+            const total = cart.reduce((acc, item) => acc + item.price, 0);
+            totalEl.innerText = `₹${total.toLocaleString('en-IN')}`;
+            document.getElementById('pay-total').innerText = total.toLocaleString('en-IN');
+        }
+
+        function openCheckout() { if(cart.length === 0) return; document.getElementById('checkout-modal').classList.add('active'); }
+
+        function startTracking() {
+            document.getElementById('checkout-modal').classList.remove('active');
+            document.getElementById('tracking-modal').classList.add('active');
+            
+            let progress = 0;
+            const bar = document.getElementById('progress-bar');
+            const bike = document.getElementById('bike-icon');
+            const status = document.getElementById('status-text');
+
+            const interval = setInterval(() => {
+                progress += 1;
+                bar.style.width = progress + "%";
+                bike.style.left = progress + "%";
+
+                if(progress > 30) status.innerText = "Sourcing from the archives...";
+                if(progress > 70) status.innerText = "Quality inspection complete...";
+                if(progress >= 100) {
+                    clearInterval(interval);
+                    status.innerText = "Handed over to the courier!";
+                    status.style.color = "#c5a059";
+                }
+            }, 60);
+        }
+    </script>
+</body>
+</html>
